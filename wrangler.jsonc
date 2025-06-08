@@ -7,10 +7,10 @@
 	"name": "supabase-simple-http-mcp-server",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-06-07",
-	"migrations": [
+  "migrations": [
 		{
 			"new_sqlite_classes": [
-				"MyDurableObject"
+				"SupabaseMCP"
 			],
 			"tag": "v1"
 		}
@@ -18,14 +18,15 @@
 	"durable_objects": {
 		"bindings": [
 			{
-				"class_name": "MyDurableObject",
-				"name": "MY_DURABLE_OBJECT"
+				"class_name": "SupabaseMCP",
+				"name": "MCP_OBJECT"
 			}
 		]
 	},
 	"observability": {
 		"enabled": true
-	}
+	},
+	"compatibility_flags": ["nodejs_compat"],
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -43,7 +44,10 @@
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
-	// "vars": { "MY_VARIABLE": "production_value" },
+	"vars": {
+		"AUTH_USERNAME": "admin",
+		"AUTH_PASSWORD": "change-this-password"
+	},
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/

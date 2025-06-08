@@ -11,5 +11,12 @@
 	"devDependencies": {
 		"typescript": "^5.5.2",
 		"wrangler": "^4.19.1"
+	},
+	"dependencies": {
+		"@cloudflare/workers-oauth-provider": "^0.0.5",
+		"@modelcontextprotocol/sdk": "^1.12.1",
+		"@supabase/supabase-js": "^2.50.0",
+		"agents": "^0.0.95",
+		"zod": "^3.25.56"
 	}
 }
