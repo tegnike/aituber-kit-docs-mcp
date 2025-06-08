@@ -3,11 +3,35 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
  
 export class SupabaseMCP extends McpAgent {
+	private authToken?: string;
+	private projectRef?: string;
+	
 	server = new McpServer({
 		name: 'SupabaseMCP Server',
 		version: '0.1.0',
 	});
  
+	// Override fetch to extract headers before processing
+	async fetch(request: Request): Promise<Response> {		
+		// Extract headers from the incoming request
+		this.authToken = request.headers.get('Authorization')?.replace('Bearer ', '') || undefined;
+		this.projectRef = request.headers.get('X-Project-Ref') || undefined;
+		
+		// Call parent fetch method
+		return super.fetch(request);
+	}
+	
+	// Override onSSEMcpMessage to handle SSE POST messages
+	async onSSEMcpMessage(sessionId: string, request: Request): Promise<Error | null> {
+		
+		// Extract headers from the SSE POST request
+		this.authToken = request.headers.get('Authorization')?.replace('Bearer ', '') || undefined;
+		this.projectRef = request.headers.get('X-Project-Ref') || undefined;
+		
+		// Call parent method
+		return super.onSSEMcpMessage(sessionId, request);
+	}
+	
 	async init() {
 		this.server.tool(
 			'supabase',
@@ -15,19 +39,31 @@ export class SupabaseMCP extends McpAgent {
 			{
 				sql: z.string().describe('The SQL query to execute'),
 			},
-			async ({ sql }, { request }) => {
-				const access_token = request?.headers?.get('Authorization')?.replace('Bearer ', '');
-				const project_ref = request?.headers?.get('X-Project-Ref');
+			async ({ sql }) => {
 				
-				if (!access_token || !project_ref) {
+				// Use the headers stored from the fetch method
+				const access_token = this.authToken;
+				const project_ref = this.projectRef;
+				
+				if (!access_token) {
 					return {
 						content: [{
 							type: 'text',
-							text: 'Missing Authorization header or X-Project-Ref header'
+							text: 'Missing access token'
 						}],
 						isError: true,
 					};
 				}
+				if (!project_ref) {
+					return {
+						content: [{
+							type: 'text',
+							text: 'Missing project reference'
+						}],
+						isError: true,
+					};
+				}
+
 				try {
 					const url = `https://api.supabase.com/v1/projects/${project_ref}/database/query`;
 					

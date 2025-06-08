@@ -7,12 +7,12 @@
 	"name": "supabase-simple-http-mcp-server",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-06-07",
-  "migrations": [
+	"migrations": [
 		{
+			"tag": "v2",
 			"new_sqlite_classes": [
 				"SupabaseMCP"
-			],
-			"tag": "v1"
+			]
 		}
 	],
 	"durable_objects": {

@@ -5,7 +5,10 @@
       "Bash(npm install:*)",
       "Bash(npm run:*)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "mcp__deepwiki__ask_question",
+      "Bash(find:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
