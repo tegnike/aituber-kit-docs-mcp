@@ -9,13 +9,11 @@ export default {
  
 		// /sse エンドポイントの場合は SSE で応答する
 		if (url.pathname === '/sse' || url.pathname === '/sse/message') {
-			// @ts-ignore
 			return SupabaseMCP.serveSSE('/sse').fetch(request, env, ctx);
 		}
  
 		// /mcp エンドポイントの場合は Streamable HTTP で応答する
 		if (url.pathname === '/mcp') {
-			// @ts-ignore
 			return SupabaseMCP.serve('/mcp').fetch(request, env, ctx);
 		}
  
