@@ -6,6 +6,10 @@ Supabase統合を備えたMCP（Model Context Protocol）サーバーのCloudfla
 
 このプロジェクトは、Cloudflare Workers上で動作するMCPサーバーを提供し、ステートフルな接続にDurable Objectsを活用します。Model Context Protocolを実装して、AIモデルが標準化されたインターフェースを通じてSupabaseデータベースと対話できるようにします。
 
+こちらの記事でも紹介しています。
+
+https://zenn.dev/nikechan/articles/10ba0e4fe21d49
+
 ## 機能
 
 - **SSEサポート**: リアルタイム通信のためのServer-Sent Eventsエンドポイント
