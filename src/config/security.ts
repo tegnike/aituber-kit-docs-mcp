@@ -5,6 +5,9 @@
  * 本番環境では必要最小限のアクセス権限のみを許可してください。
  */
 
+// カスタムセキュリティ設定は別ファイルから読み込み
+import { CUSTOM_SECURITY_CONFIG } from './custom-security';
+
 export interface SecurityConfig {
   // 許可するSQL操作の種類
   allowedSqlOperations: string[];
@@ -42,12 +45,7 @@ export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   // 📝 テーブル別許可カラム（オブジェクトのキーが許可されるテーブル名）
   // 空配列にすると該当テーブルの全カラムアクセス可能
   // テーブルをここに追加するだけで、そのテーブルへのアクセスが許可されます
-  allowedColumns: {
-    tweets: [],
-    public_messages: [],
-    my_tweets: [],
-    local_messages: [],
-  },
+  allowedColumns: {},
   
   // 📝 禁止キーワード（大文字小文字区別なし）
   forbiddenKeywords: [
@@ -74,26 +72,6 @@ export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   
   // 📝 最大結果行数（大量データ取得を防ぐ）
   maxResultRows: 1000
-};
-
-/**
- * カスタムセキュリティ設定
- * 
- * 🛠️ 必要に応じてここでデフォルト設定を上書きできます
- * 例：開発環境では制限を緩和、本番環境では厳格化
- */
-export const CUSTOM_SECURITY_CONFIG: Partial<SecurityConfig> = {
-  // 例：開発環境でのみINSERT/UPDATEを許可
-  // allowedSqlOperations: ['SELECT', 'INSERT', 'UPDATE'],
-  
-  // 例：特定のテーブルのみアクセス許可
-  // allowedColumns: { 'public_data': [] }, // 空配列で全カラム許可
-  
-  // 例：全テーブルアクセス許可（非推奨）
-  // allowAllTables: true,
-  
-  // 例：最大行数を制限
-  // maxResultRows: 100
 };
 
 /**
