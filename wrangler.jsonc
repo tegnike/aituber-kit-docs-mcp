@@ -2,19 +2,12 @@
  * For more details on how to configure Wrangler, refer to:
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
-{
+ {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "supabase-simple-http-mcp-server",
 	"main": "src/index.ts",
-	"compatibility_date": "2025-06-07",
-	"migrations": [
-		{
-			"tag": "v2",
-			"new_sqlite_classes": [
-				"SupabaseMCP"
-			]
-		}
-	],
+	"compatibility_date": "2025-05-10",
+	"compatibility_flags": ["nodejs_compat"],
 	"durable_objects": {
 		"bindings": [
 			{
@@ -25,8 +18,7 @@
 	},
 	"observability": {
 		"enabled": true
-	},
-	"compatibility_flags": ["nodejs_compat"],
+	}
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -44,10 +36,7 @@
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
-	"vars": {
-		"AUTH_USERNAME": "admin",
-		"AUTH_PASSWORD": "change-this-password"
-	},
+	// "vars": { "MY_VARIABLE": "production_value" },
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
