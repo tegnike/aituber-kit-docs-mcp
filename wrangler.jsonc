@@ -8,6 +8,14 @@
 	"main": "src/index.ts",
 	"compatibility_date": "2025-05-10",
 	"compatibility_flags": ["nodejs_compat"],
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"SupabaseMCP"
+			]
+		}
+	],
 	"durable_objects": {
 		"bindings": [
 			{
