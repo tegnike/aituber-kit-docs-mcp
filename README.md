@@ -159,23 +159,23 @@ npm run deploy
 ```typescript
 // src/config/custom-security.ts
 export const CUSTOM_SECURITY_CONFIG: Partial<SecurityConfig> = {
-  // 開発環境でのみINSERT/UPDATEを許可
+  // 特定の操作のみ許可
   allowedSqlOperations: ['SELECT', 'INSERT', 'UPDATE'],
   
   // 特定のテーブルのみアクセス許可（空配列で全カラム許可）
   allowedColumns: { 
-  'users': ['id', 'name', 'email', 'created_at'],
-  'posts': ['id', 'title', 'content', 'author_id', 'created_at'],
-  'categories': ['id', 'name', 'description'],
-  'comments': ['id', 'content', 'post_id', 'author_id', 'created_at']
+    'users': ['id', 'name', 'email', 'created_at'],
+    'posts': ['id', 'title', 'content', 'author_id', 'created_at'],
+    'categories': ['id', 'name', 'description'],
+    'comments': ['id', 'content', 'post_id', 'author_id', 'created_at']
   },
   
-  // 全テーブルアクセス許可（非推奨）
+  // allowedColumns無視で全テーブルアクセス許可（非推奨）
   // allowAllTables: true,
   
   // 最大行数を制限
   maxResultRows: 100
-};
+}
 ```
 
 ### Wrangler設定
