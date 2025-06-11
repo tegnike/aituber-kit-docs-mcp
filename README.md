@@ -1,7 +1,5 @@
 # Supabase Simple HTTP MCP サーバー
 
-注意: AIが生成したので間違っている可能性があります。
-
 Supabase統合を備えたMCP（Model Context Protocol）サーバーのCloudflare Workers実装で、SSE（Server-Sent Events）とStreamable HTTP接続の両方をサポートします。
 
 ## 概要
@@ -54,8 +52,86 @@ npm run dev
 ```
 
 サーバーは以下で利用可能になります：
-- SSEエンドポイント: `http://localhost:8787/sse`
-- MCPエンドポイント: `http://localhost:8787/mcp`
+- SSE: `http://localhost:8787/sse`
+- Stremable HTTP: `http://localhost:8787/mcp`
+
+### MCPクライアントの設定
+
+以下はSSEの場合の設定例ですが、Stremable HTTPでも同じように設定できます。
+
+#### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "/Users/user/.volta/bin/npx",
+      "args": [
+        "mcp-remote",
+        "http://localhost:8787/sse",
+        "--header",
+        "Authorization: Bearer ${SUPABASE_AUTH_TOKEN}",
+        "--header",
+        "X-Project-Ref: ${SUPABASE_PROJECT_REF}"
+      ],
+      "env": {
+        "SUPABASE_AUTH_TOKEN": "supabase_access_token",
+        "SUPABASE_PROJECT_REF": "supabase_project_ref"
+      }
+    }
+  }
+}
+```
+
+#### Cursor
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "url": "http://localhost:8787/sse",
+      "headers": {
+        "Authorization": "supabase_access_token",
+        "X-Project-Ref": "supabase_project_ref"
+      }
+    }
+  }
+}
+```
+
+#### Mastra
+
+※ MastraはMCP SDKのバグによりrequestInitとeventSourceInitの両方を設定する必要があるそうです。
+
+参考: [リファレンス: MCPClient | ツール管理 | Mastra ドキュメント](https://mastra.ai/ja/reference/tools/mcp-client#sse%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%98%E3%83%83%E3%83%80%E3%83%BC%E3%81%AE%E4%BD%BF%E7%94%A8)
+
+```
+const mcp = new MCPClient({
+  servers: {
+    supabase: {
+      url: new URL(process.env.SUPABASE_MCP_URL || ""),
+      requestInit: {
+        headers: {
+          "Authorization": `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,
+          "X-Project-Ref": process.env.SUPABASE_PROJECT_REF || ""
+        }
+      },
+      eventSourceInit: {
+        fetch(input: Request | URL | string, init?: RequestInit) {
+          const headers = new Headers(init?.headers || {});
+          headers.set("Authorization", `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`);
+          headers.set("X-Project-Ref", process.env.SUPABASE_PROJECT_REF || "");
+          return fetch(input, {
+            ...init,
+            headers,
+          });
+        },
+      },
+    },
+  },
+});
+```
+
 
 ## デプロイ
 
@@ -71,37 +147,28 @@ npm run deploy
 **重要**: 本番環境では必ずセキュリティ設定を適切に構成してください。
 
 #### 設定ファイルの場所
-- `src/config/security.ts` - セキュリティ設定の管理
-
-#### 設定項目
-
-```typescript
-// 📝 許可するSQL操作（安全のためSELECTのみ推奨）
-allowedSqlOperations: ['SELECT']
-
-// 📝 テーブル別許可カラム（オブジェクトのキーが許可テーブル名）
-allowedColumns: {
-  'users': ['id', 'name', 'email', 'created_at'],
-  'posts': ['id', 'title', 'content', 'author_id', 'created_at'],
-  'categories': ['id', 'name', 'description'],
-  'comments': ['id', 'content', 'post_id', 'author_id', 'created_at']
-}
-
-// 📝 最大取得行数
-maxResultRows: 1000
-```
+- `src/config/security.ts` - デフォルトセキュリティ設定と型定義
+- `src/config/custom-security.ts` - カスタムセキュリティ設定（ユーザー編集用）
 
 #### カスタム設定
 
-`CUSTOM_SECURITY_CONFIG`でデフォルト設定を上書きできます：
+**🔧 設定の変更方法**
+
+セキュリティ設定をカスタマイズするには、`src/config/custom-security.ts`ファイルを編集してください。このファイルは可変設定専用で、デフォルト設定を上書きできます：
 
 ```typescript
+// src/config/custom-security.ts
 export const CUSTOM_SECURITY_CONFIG: Partial<SecurityConfig> = {
   // 開発環境でのみINSERT/UPDATEを許可
   allowedSqlOperations: ['SELECT', 'INSERT', 'UPDATE'],
   
   // 特定のテーブルのみアクセス許可（空配列で全カラム許可）
-  allowedColumns: { 'public_data': [] },
+  allowedColumns: { 
+  'users': ['id', 'name', 'email', 'created_at'],
+  'posts': ['id', 'title', 'content', 'author_id', 'created_at'],
+  'categories': ['id', 'name', 'description'],
+  'comments': ['id', 'content', 'post_id', 'author_id', 'created_at']
+  },
   
   // 全テーブルアクセス許可（非推奨）
   // allowAllTables: true,
@@ -113,10 +180,12 @@ export const CUSTOM_SECURITY_CONFIG: Partial<SecurityConfig> = {
 
 ### Wrangler設定
 
-`wrangler.jsonc`ファイルにはWorkersの設定が含まれています：
-- Durable Objectバインディング
-- 互換性設定
-- Node.js互換性フラグ
+`wrangler.jsonc`ファイルにはCloudflare Workersの設定が含まれています：
+- **Durable Objectバインディング**: `SupabaseMCP`クラスを`MCP_OBJECT`として定義
+- **互換性設定**: `compatibility_date`で実行環境の日付を指定
+- **Node.js互換性フラグ**: `nodejs_compat`でNode.js APIの使用を有効化
+- **マイグレーション設定**: Durable Objectsのバージョン管理
+- **監視機能**: `observability`でパフォーマンス監視を有効化
 
 ## プロジェクト構造
 
@@ -125,7 +194,8 @@ export const CUSTOM_SECURITY_CONFIG: Partial<SecurityConfig> = {
       index.ts              # メインワーカーエントリーポイント
       supabaseMcp.ts        # Durable Object MCP実装（セキュリティ機能付き）
       config/
-         security.ts        # セキュリティ設定ファイル
+         security.ts        # デフォルトセキュリティ設定と型定義
+         custom-security.ts # カスタムセキュリティ設定（ユーザー編集用）
       utils/
          sqlValidator.ts    # SQLバリデーション機能
    package.json
@@ -133,78 +203,3 @@ export const CUSTOM_SECURITY_CONFIG: Partial<SecurityConfig> = {
    wrangler.jsonc           # Cloudflare Workers設定
    README.md
 ```
-
-## APIエンドポイント
-
-### SSEエンドポイント
-- `GET /sse`: SSE接続を確立
-- `POST /sse/message`: SSE接続を通じてメッセージを送信
-
-### MCPエンドポイント
-- `POST /mcp`: MCPプロトコル用のStreamable HTTPエンドポイント
-
-### Supabaseツール
-- `supabase`: セキュリティ制限付きSQL実行ツール
-  - SELECT文のみ実行可能
-  - ホワイトリストに登録されたテーブル・カラムのみアクセス可能
-  - 最大取得行数制限あり
-  - 危険なキーワード（DELETE、DROP等）は自動的にブロック
-
-#### 使用例
-
-```sql
--- ✅ 許可される例
-SELECT id, name, email FROM users LIMIT 10;
-SELECT * FROM posts WHERE author_id = 1;
-
--- ❌ 拒否される例
-DELETE FROM users WHERE id = 1;  -- DELETE文は禁止
-DROP TABLE posts;                -- DROP文は禁止
-SELECT * FROM secret_table;      -- ホワイトリストにないテーブル
-```
-
-## 開発スクリプト
-
-- `npm run dev` - ホットリロード付きの開発サーバーを起動
-- `npm run deploy` - Cloudflare Workersにデプロイ
-- `npm run cf-typegen` - Cloudflareバインディング用のTypeScript型を生成
-
-## 使用技術
-
-- **Cloudflare Workers**: サーバーレスエッジコンピューティングプラットフォーム
-- **Durable Objects**: 接続処理用のステートフルサーバーレスオブジェクト
-- **TypeScript**: 型安全なJavaScript
-- **MCP SDK**: Model Context Protocol実装
-- **Zod**: ランタイム型検証とスキーマ定義
-- **Supabase**: オープンソースのFirebase代替
-
-## セキュリティ機能
-
-このMCPサーバーには以下のセキュリティ機能が組み込まれています：
-
-### 🛡️ SQL実行制限
-- **操作制限**: SELECT文のみ許可（DELETE、UPDATE、DROP等を防止）
-- **テーブル制限**: ホワイトリストに登録されたテーブルのみアクセス可能
-- **カラム制限**: テーブル別に許可されたカラムのみアクセス可能
-- **行数制限**: 一度に取得できる最大行数を制限
-
-### 🚫 禁止キーワード検出
-以下のキーワードを含むクエリは自動的にブロックされます：
-- `DELETE`, `DROP`, `TRUNCATE`, `INSERT`, `UPDATE`
-- `ALTER`, `CREATE`, `GRANT`, `REVOKE`
-- `EXEC`, `EXECUTE`, `CALL`
-- SQLインジェクション攻撃に使用される可能性のあるキーワード
-
-### ⚙️ 設定のカスタマイズ
-- `src/config/security.ts`で簡単に設定変更可能
-- 開発環境と本番環境で異なる設定を適用可能
-- デフォルト設定は最も安全な状態に設定
-
-### 📊 詳細なエラーメッセージ
-- セキュリティ違反時に具体的な理由を表示
-- 許可されている操作・テーブル・カラムの一覧を提示
-- 警告メッセージで潜在的な問題を通知
-
-## ライセンス
-
-このプロジェクトはMITライセンスの下で公開されています。
