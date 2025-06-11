@@ -46,7 +46,7 @@ export class SupabaseMCP extends McpAgent {
 	
 	async init() {
 		this._server.tool(
-			'supabase',
+			'execute_sql',
 			'Execute SQL queries on Supabase using Management API (セキュリティ制限付き)',
 			{
 				sql: z.string().describe('実行するSQLクエリ（SELECT文のみ許可、ホワイトリストに登録されたテーブル・カラムのみアクセス可能）'),
