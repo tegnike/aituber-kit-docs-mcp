@@ -1,10 +1,10 @@
-# Supabase Simple HTTP MCP サーバー
+# AITuberKit Documentation MCP サーバー
 
-Supabase統合を備えたMCP（Model Context Protocol）サーバーのCloudflare Workers実装で、SSE（Server-Sent Events）とStreamable HTTP接続の両方をサポートします。
+AITuberKitのドキュメント検索機能を提供するMCP（Model Context Protocol）サーバーのCloudflare Workers実装で、SSE（Server-Sent Events）とStreamable HTTP接続の両方をサポートします。
 
 ## 概要
 
-このプロジェクトは、Cloudflare Workers上で動作するMCPサーバーを提供し、ステートフルな接続にDurable Objectsを活用します。Model Context Protocolを実装して、AIモデルが標準化されたインターフェースを通じてSupabaseデータベースと対話できるようにします。
+このプロジェクトは、Cloudflare Workers上で動作するAITuberKit Documentation MCPサーバーを提供します。AITuberKitのドキュメントを検索・参照するためのツールとして、AIモデルがModel Context Protocolを通じてドキュメントにアクセスできるようにします。
 
 こちらの記事でも紹介しています。
 
@@ -16,26 +16,23 @@ https://zenn.dev/nikechan/articles/10ba0e4fe21d49
 - **Streamable HTTP**: MCPプロトコル用の標準HTTPエンドポイント
 - **Durable Objects**: CloudflareのDurable Objectsを使用したステートフルな接続処理
 - **TypeScript**: TypeScriptによる完全な型安全性
-- **Supabase統合**: データベース操作のためのSupabaseとの直接統合
-- **🔒 セキュリティ機能**: SQL実行の制限とホワイトリスト機能
-  - SELECT文のみ許可（DELETE、DROP等の危険な操作を防止）
-  - テーブル・カラムのアクセス制限
-  - 禁止キーワードの検出
-  - 最大取得行数の制限
+- **ドキュメント検索**: 自然言語クエリに基づいてAITuberKitのドキュメントを検索
+- **OpenAI統合**: 最も関連性の高いドキュメントを自動選択
+- **複数ドキュメント取得**: 最大3つの関連ドキュメントを一度に取得
 
 ## 前提条件
 
 - Node.js（v18以上）
 - Cloudflareアカウント
 - Wrangler CLIがグローバルまたはnpx経由でインストール済み
-- Supabaseプロジェクト（統合用）
+- OpenAI APIキー（AITuberKitドキュメント検索用）
 
 ## インストール
 
 1. リポジトリをクローンします：
 ```bash
-git clone https://github.com/tegnike/supabase-simple-http-mcp-server.git
-cd supabase-simple-http-mcp-server
+git clone https://github.com/tegnike/aituberkit-docs-mcp-server.git
+cd aituberkit-docs-mcp-server
 ```
 
 2. 依存関係をインストールします：
@@ -57,31 +54,23 @@ npm run dev
 
 サーバーは以下で利用可能になります：
 - SSE: `http://localhost:8787/sse`
-- Stremable HTTP: `http://localhost:8787/mcp`
+- Streamable HTTP: `http://localhost:8787/mcp`
 
 ### MCPクライアントの設定
 
-以下はSSEの場合の設定例ですが、Stremable HTTPでも同じように設定できます。
+以下はSSEの場合の設定例ですが、Streamable HTTPでも同じように設定できます。
 
 #### Claude Desktop
 
 ```json
 {
   "mcpServers": {
-    "filesystem": {
+    "aituberkit-docs": {
       "command": "/Users/user/.volta/bin/npx",
       "args": [
         "mcp-remote",
-        "http://localhost:8787/sse",
-        "--header",
-        "Authorization: Bearer ${SUPABASE_AUTH_TOKEN}",
-        "--header",
-        "X-Project-Ref: ${SUPABASE_PROJECT_REF}"
-      ],
-      "env": {
-        "SUPABASE_AUTH_TOKEN": "supabase_access_token",
-        "SUPABASE_PROJECT_REF": "supabase_project_ref"
-      }
+        "http://localhost:8787/sse"
+      ]
     }
   }
 }
@@ -92,48 +81,11 @@ npm run dev
 ```json
 {
   "mcpServers": {
-    "supabase": {
-      "url": "http://localhost:8787/sse",
-      "headers": {
-        "Authorization": "supabase_access_token",
-        "X-Project-Ref": "supabase_project_ref"
-      }
+    "aituberkit-docs": {
+      "url": "http://localhost:8787/sse"
     }
   }
 }
-```
-
-#### Mastra
-
-※ MastraはMCP SDKのバグによりrequestInitとeventSourceInitの両方を設定する必要があるそうです。
-
-参考: [リファレンス: MCPClient | ツール管理 | Mastra ドキュメント](https://mastra.ai/ja/reference/tools/mcp-client#sse%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%98%E3%83%83%E3%83%80%E3%83%BC%E3%81%AE%E4%BD%BF%E7%94%A8)
-
-```
-const mcp = new MCPClient({
-  servers: {
-    supabase: {
-      url: new URL(process.env.SUPABASE_MCP_URL || ""),
-      requestInit: {
-        headers: {
-          "Authorization": `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,
-          "X-Project-Ref": process.env.SUPABASE_PROJECT_REF || ""
-        }
-      },
-      eventSourceInit: {
-        fetch(input: Request | URL | string, init?: RequestInit) {
-          const headers = new Headers(init?.headers || {});
-          headers.set("Authorization", `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`);
-          headers.set("X-Project-Ref", process.env.SUPABASE_PROJECT_REF || "");
-          return fetch(input, {
-            ...init,
-            headers,
-          });
-        },
-      },
-    },
-  },
-});
 ```
 
 
@@ -146,46 +98,24 @@ npm run deploy
 
 ## 設定
 
-### セキュリティ設定
+### 環境変数
 
-**重要**: 本番環境では必ずセキュリティ設定を適切に構成してください。
+`.dev.vars`ファイルを作成し、以下の環境変数を設定します：
 
-#### 設定ファイルの場所
-- `src/config/security.ts` - デフォルトセキュリティ設定と型定義
-- `src/config/custom-security.ts` - カスタムセキュリティ設定（ユーザー編集用）
+```env
+OPENAI_API_KEY=sk-...
+```
 
-#### カスタム設定
+本番環境では、Cloudflare Workersのシークレットとして設定します：
 
-**🔧 設定の変更方法**
-
-セキュリティ設定をカスタマイズするには、`src/config/custom-security.ts`ファイルを編集してください。このファイルは可変設定専用で、デフォルト設定を上書きできます：
-
-```typescript
-// src/config/custom-security.ts
-export const CUSTOM_SECURITY_CONFIG: Partial<SecurityConfig> = {
-  // 特定の操作のみ許可
-  allowedSqlOperations: ['SELECT', 'INSERT', 'UPDATE'],
-  
-  // 特定のテーブルのみアクセス許可（空配列で全カラム許可）
-  allowedColumns: { 
-    'users': ['id', 'name', 'email', 'created_at'],
-    'posts': ['id', 'title', 'content', 'author_id', 'created_at'],
-    'categories': ['id', 'name', 'description'],
-    'comments': ['id', 'content', 'post_id', 'author_id', 'created_at']
-  },
-  
-  // allowedColumns無視で全テーブルアクセス許可（非推奨）
-  // allowAllTables: true,
-  
-  // 最大行数を制限
-  maxResultRows: 100
-}
+```bash
+npx wrangler secret put OPENAI_API_KEY
 ```
 
 ### Wrangler設定
 
 `wrangler.jsonc`ファイルにはCloudflare Workersの設定が含まれています：
-- **Durable Objectバインディング**: `SupabaseMCP`クラスを`MCP_OBJECT`として定義
+- **Durable Objectバインディング**: `AITuberKitMCP`クラスを`MCP_OBJECT`として定義
 - **互換性設定**: `compatibility_date`で実行環境の日付を指定
 - **Node.js互換性フラグ**: `nodejs_compat`でNode.js APIの使用を有効化
 - **マイグレーション設定**: Durable Objectsのバージョン管理
@@ -196,14 +126,33 @@ export const CUSTOM_SECURITY_CONFIG: Partial<SecurityConfig> = {
 ```
    src/
       index.ts              # メインワーカーエントリーポイント
-      supabaseMcp.ts        # Durable Object MCP実装（セキュリティ機能付き）
-      config/
-         security.ts        # デフォルトセキュリティ設定と型定義
-         custom-security.ts # カスタムセキュリティ設定（ユーザー編集用）
-      utils/
-         sqlValidator.ts    # SQLバリデーション機能
+      aituberKitMcp.ts      # AITuberKit Documentation MCP実装
+      index.json            # AITuberKitドキュメントのインデックス
+      documentContent.ts    # ビルド時に生成されるドキュメント内容
+      docs/                 # AITuberKitドキュメント（git submodule）
+   scripts/
+      buildDocumentContent.js # ドキュメント内容をビルドするスクリプト
    package.json
    tsconfig.json
    wrangler.jsonc           # Cloudflare Workers設定
    README.md
 ```
+
+## MCPツール
+
+### search_aituberkit_docs
+
+AITuberKitのドキュメントを検索し、関連する情報を取得します。
+
+**パラメータ:**
+- `query` (string): 検索クエリ
+
+**動作:**
+1. OpenAI APIを使用して、クエリに最も関連するドキュメントを最大3つ選択
+2. 選択されたドキュメントの内容を取得
+3. 結合されたドキュメント内容を返す
+
+**使用例:**
+- 「AITuberKitでYouTube配信を設定する方法は？」
+- 「VRMキャラクターの設定について教えて」
+- 「リアルタイムAPIの使い方」

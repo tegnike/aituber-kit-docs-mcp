@@ -1,11 +1,12 @@
 {
-	"name": "supabase-simple-http-mcp-server",
+	"name": "aituberkit-docs-mcp-server",
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev",
+		"build:docs": "node scripts/buildDocumentContent.js",
+		"deploy": "npm run build:docs && wrangler deploy",
+		"dev": "npm run build:docs && wrangler dev",
+		"start": "npm run build:docs && wrangler dev",
 		"cf-typegen": "wrangler types"
 	},
 	"devDependencies": {
@@ -13,10 +14,9 @@
 		"wrangler": "^4.19.1"
 	},
 	"dependencies": {
-		"@cloudflare/workers-oauth-provider": "^0.0.5",
 		"@modelcontextprotocol/sdk": "^1.12.1",
-		"@supabase/supabase-js": "^2.50.0",
 		"agents": "^0.0.95",
+		"openai": "^5.3.0",
 		"zod": "^3.25.56"
 	}
 }

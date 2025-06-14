@@ -8,6 +8,12 @@
       "WebFetch(domain:www.npmjs.com)",
       "mcp__deepwiki__ask_question",
       "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(npm run build:docs:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(rm:*)",
+      "Bash(git submodule:*)",
       "Bash(grep:*)"
     ],
     "deny": []

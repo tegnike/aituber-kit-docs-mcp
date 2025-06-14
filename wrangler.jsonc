@@ -4,7 +4,7 @@
  */
  {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "supabase-simple-http-mcp-server",
+	"name": "aituberkit-docs-mcp-server",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-05-10",
 	"compatibility_flags": ["nodejs_compat"],
@@ -12,14 +12,14 @@
 		{
 			"tag": "v1",
 			"new_sqlite_classes": [
-				"SupabaseMCP"
+				"AITuberKitMCP"
 			]
 		}
 	],
 	"durable_objects": {
 		"bindings": [
 			{
-				"class_name": "SupabaseMCP",
+				"class_name": "AITuberKitMCP",
 				"name": "MCP_OBJECT"
 			}
 		]
