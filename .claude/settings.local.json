@@ -14,7 +14,8 @@
       "Bash(npm run:*)",
       "Bash(rm:*)",
       "Bash(git submodule:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx wrangler secret:*)"
     ],
     "deny": []
   }

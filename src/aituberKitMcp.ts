@@ -10,10 +10,10 @@ interface DocumentIndex {
   } | string;
 }
 
-export class AITuberKitMCP extends McpAgent {
+export class AITuberKitMCP extends McpAgent<Env> {
   private _server: McpServer;
   private documentIndex: DocumentIndex;
-  private env: Env;
+  private _env: Env;
   
   get server() {
     return this._server;
@@ -21,7 +21,7 @@ export class AITuberKitMCP extends McpAgent {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.env = env;
+    this._env = env;
     this._server = new McpServer({
       name: 'AITuberKit Documentation MCP Server',
       version: '0.1.0',
@@ -43,8 +43,7 @@ export class AITuberKitMCP extends McpAgent {
           // Step 1: Use OpenAI to select the most relevant documents
           const documentList = this.formatDocumentList();
           
-          const openaiApiKey = this.env.OPENAI_API_KEY;
-          console.log('openaiApiKey', openaiApiKey);
+          const openaiApiKey = this._env.OPENAI_API_KEY;
           if (!openaiApiKey) {
             throw new Error('OPENAI_API_KEY is not configured');
           }
